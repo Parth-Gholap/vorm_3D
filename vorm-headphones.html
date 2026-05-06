@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VÖRM — Étude No. 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --copper: #b5651d;
+    --copper-light: #cd7f32;
+    --copper-glow: rgba(181,101,29,0.18);
+    --text: #f0ece4;
+    --text-dim: rgba(240,236,228,0.55);
+    --text-faint: rgba(240,236,228,0.28);
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'Jost', sans-serif;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: auto; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 200;
+    overflow-x: hidden;
+  }
+
+  /* ── LOADING ── */
+  #loader {
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 32px;
+    transition: opacity 0.9s ease;
+  }
+  #loader.hidden { opacity: 0; pointer-events: none; }
+
+  .loader-brand {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 300;
+    letter-spacing: 0.5em;
+    text-indent: 0.5em;
+    color: var(--text);
+  }
+  .loader-brand span { color: var(--copper-light); }
+
+  .loader-track {
+    width: min(280px, 60vw);
+    height: 1px;
+    background: rgba(240,236,228,0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .loader-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--copper), var(--copper-light));
+    transition: width 0.1s linear;
+  }
+  .loader-pct {
+    font-family: var(--sans);
+    font-weight: 200;
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    color: var(--text-dim);
+  }
+
+  /* ── GRAIN OVERLAY ── */
+  #grain {
+    position: fixed; inset: 0; z-index: 500;
+    pointer-events: none;
+    opacity: 0.035;
+    filter: url(#grain-filter);
+    width: 100%; height: 100%;
+    background: transparent;
+  }
+
+  /* ── VIGNETTE ── */
+  #vignette {
+    position: fixed; inset: 0; z-index: 499;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.65) 100%);
+  }
+
+  /* ── NAVBAR ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 600;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 48px;
+    mix-blend-mode: difference;
+  }
+  .nav-logo {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 300;
+    letter-spacing: 0.55em;
+    text-indent: 0.55em;
+    color: #fff;
+    text-decoration: none;
+  }
+  .nav-links {
+    display: flex; gap: 40px; list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: #fff;
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+  }
+  .nav-links a:hover { opacity: 1; }
+
+  /* ── ANIMATION SECTION ── */
+  #animation-section {
+    height: 500vh;
+    position: relative;
+  }
+  #canvas-wrapper {
+    position: sticky;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+  }
+  #hero-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+
+  /* ── OVERLAYS ── */
+  .overlay {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    transition: none;
+  }
+
+  /* Headline overlay */
+  #ov-headline {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 90%;
+    max-width: 700px;
+  }
+  #ov-headline .eyebrow {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    color: var(--copper-light);
+    margin-bottom: 20px;
+  }
+  #ov-headline h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    font-weight: 300;
+    line-height: 1.05;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  #ov-headline h1 em {
+    font-style: italic;
+    color: var(--copper-light);
+  }
+  #ov-headline .sub {
+    margin-top: 16px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 200;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* Mid-scroll tagline */
+  #ov-tagline {
+    bottom: 22%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    width: 90%;
+    max-width: 600px;
+  }
+  #ov-tagline p {
+    font-family: var(--serif);
+    font-size: clamp(1.3rem, 3vw, 2.4rem);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+  }
+  #ov-tagline .rule {
+    width: 48px; height: 1px;
+    background: var(--copper);
+    margin: 20px auto 0;
+  }
+
+  /* Side detail overlays */
+  #ov-left {
+    left: clamp(24px, 5vw, 72px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 28px;
+  }
+  #ov-right {
+    right: clamp(24px, 5vw, 72px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 28px;
+    text-align: right;
+  }
+  .spec-label {
+    display: flex; flex-direction: column; gap: 5px;
+    position: relative;
+  }
+  .spec-label .num {
+    font-family: var(--sans);
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: 0.5em;
+    color: var(--copper-light);
+    text-transform: uppercase;
+  }
+  .spec-label .name {
+    font-family: var(--serif);
+    font-size: clamp(0.75rem, 1.4vw, 1rem);
+    font-weight: 300;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .spec-label .desc {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 200;
+    letter-spacing: 0.15em;
+    color: var(--text-faint);
+    max-width: 180px;
+    line-height: 1.5;
+  }
+  #ov-right .spec-label .desc { margin-left: auto; }
+
+  /* connector lines */
+  .spec-label::after {
+    content: '';
+    position: absolute;
+    bottom: -14px;
+    left: 0;
+    width: 32px; height: 1px;
+    background: var(--copper);
+    opacity: 0.4;
+  }
+  #ov-right .spec-label::after { left: auto; right: 0; }
+
+  /* CTA overlay */
+  #ov-cta {
+    bottom: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+    width: 90%;
+  }
+  #ov-cta .cta-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 200;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  #ov-cta a {
+    display: inline-block;
+    padding: 16px 48px;
+    border: 1px solid var(--copper);
+    backdrop-filter: blur(12px);
+    background: rgba(181,101,29,0.06);
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--copper-light);
+    transition: background 0.4s, color 0.4s;
+  }
+  #ov-cta a:hover {
+    background: rgba(181,101,29,0.18);
+    color: var(--text);
+  }
+
+  /* Scroll indicator */
+  #scroll-hint {
+    position: absolute;
+    bottom: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    opacity: 1;
+    transition: none;
+    pointer-events: none;
+  }
+  #scroll-hint span {
+    font-family: var(--sans);
+    font-size: 9px;
+    font-weight: 200;
+    letter-spacing: 0.6em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .scroll-arrow {
+    width: 1px; height: 48px;
+    background: linear-gradient(to bottom, transparent, var(--copper));
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; transform: scaleY(0.7); transform-origin: top; }
+    50% { opacity: 1; transform: scaleY(1); }
+  }
+
+  /* ── CONTENT SECTIONS ── */
+  #content { position: relative; }
+
+  .section {
+    padding: clamp(80px, 12vw, 160px) clamp(24px, 8vw, 120px);
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.9s ease, transform 0.9s ease;
+    position: relative;
+  }
+  .section.visible { opacity: 1; transform: translateY(0); }
+
+  .section-divider {
+    width: 1px;
+    height: clamp(60px, 8vw, 100px);
+    background: linear-gradient(to bottom, transparent, var(--copper), transparent);
+    margin: 0 auto;
+    opacity: 0.4;
+  }
+
+  /* Heritage */
+  #section-heritage {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(40px, 6vw, 100px);
+    align-items: start;
+  }
+  .heritage-left .eyebrow {
+    font-family: var(--sans);
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: 0.6em;
+    text-transform: uppercase;
+    color: var(--copper-light);
+    margin-bottom: 24px;
+  }
+  .heritage-left h2 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 4.5vw, 3.8rem);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  .heritage-left h2 em { font-style: italic; color: var(--copper-light); }
+  .heritage-right {
+    padding-top: 12px;
+    border-left: 1px solid rgba(181,101,29,0.2);
+    padding-left: clamp(24px, 4vw, 60px);
+  }
+  .heritage-right p {
+    font-family: var(--sans);
+    font-size: clamp(13px, 1.1vw, 15px);
+    font-weight: 200;
+    line-height: 2;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+  .heritage-right p:last-child { margin-bottom: 0; }
+
+  /* Specs */
+  #section-specs {
+    max-width: 1100px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .specs-eyebrow {
+    font-family: var(--sans);
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: 0.6em;
+    text-transform: uppercase;
+    color: var(--copper-light);
+    margin-bottom: 16px;
+  }
+  .specs-title {
+    font-family: var(--serif);
+    font-size: clamp(1.8rem, 4vw, 3.2rem);
+    font-weight: 300;
+    color: var(--text);
+    margin-bottom: clamp(48px, 7vw, 80px);
+  }
+  .specs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(181,101,29,0.12);
+    border: 1px solid rgba(181,101,29,0.12);
+  }
+  .spec-item {
+    background: var(--bg);
+    padding: clamp(28px, 4vw, 48px) clamp(20px, 3vw, 36px);
+    text-align: left;
+    transition: background 0.4s;
+  }
+  .spec-item:hover { background: rgba(181,101,29,0.05); }
+  .spec-item .s-label {
+    font-family: var(--sans);
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--copper-light);
+    margin-bottom: 12px;
+  }
+  .spec-item .s-value {
+    font-family: var(--serif);
+    font-size: clamp(1.3rem, 2.5vw, 2rem);
+    font-weight: 300;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .spec-item .s-desc {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 200;
+    line-height: 1.8;
+    color: var(--text-faint);
+  }
+
+  /* Quote */
+  #section-quote {
+    text-align: center;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  #section-quote blockquote {
+    font-family: var(--serif);
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.35;
+    color: var(--text);
+    position: relative;
+    padding: 0 20px;
+  }
+  #section-quote blockquote::before {
+    content: '\201C';
+    font-size: clamp(4rem, 10vw, 8rem);
+    color: var(--copper);
+    opacity: 0.25;
+    position: absolute;
+    top: -0.2em; left: -0.1em;
+    font-family: var(--serif);
+    line-height: 1;
+  }
+  #section-quote cite {
+    display: block;
+    margin-top: 28px;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 200;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--copper-light);
+    font-style: normal;
+  }
+
+  /* Final CTA */
+  #section-cta {
+    text-align: center;
+    padding-bottom: clamp(100px, 15vw, 180px);
+  }
+  #section-cta h2 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5vw, 4.5rem);
+    font-weight: 300;
+    color: var(--text);
+    margin-bottom: clamp(12px, 2vw, 24px);
+  }
+  #section-cta h2 em { font-style: italic; color: var(--copper-light); }
+  #section-cta p {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 200;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    margin-bottom: clamp(36px, 5vw, 56px);
+  }
+  .btn-primary {
+    display: inline-block;
+    padding: 18px 64px;
+    border: 1px solid var(--copper);
+    backdrop-filter: blur(16px);
+    background: rgba(181,101,29,0.08);
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--copper-light);
+    margin-right: 20px;
+    transition: background 0.4s, color 0.4s;
+  }
+  .btn-primary:hover { background: rgba(181,101,29,0.2); color: var(--text); }
+  .btn-secondary {
+    display: inline-block;
+    padding: 18px 64px;
+    border: 1px solid rgba(240,236,228,0.15);
+    backdrop-filter: blur(16px);
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--text-dim);
+    transition: border-color 0.4s, color 0.4s;
+  }
+  .btn-secondary:hover { border-color: rgba(240,236,228,0.4); color: var(--text); }
+
+  /* Footer */
+  footer {
+    padding: 40px 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid rgba(240,236,228,0.06);
+  }
+  footer .f-logo {
+    font-family: var(--serif);
+    font-size: 0.9rem;
+    font-weight: 300;
+    letter-spacing: 0.5em;
+    color: var(--text-dim);
+  }
+  footer .f-copy {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 200;
+    letter-spacing: 0.3em;
+    color: var(--text-faint);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 20px 24px; }
+    .nav-links { display: none; }
+    #ov-left, #ov-right { display: none; }
+    #section-heritage { grid-template-columns: 1fr; }
+    .heritage-right { border-left: none; padding-left: 0; border-top: 1px solid rgba(181,101,29,0.2); padding-top: 24px; }
+    .specs-grid { grid-template-columns: 1fr; }
+    .btn-primary, .btn-secondary { display: block; margin: 0 auto 16px; max-width: 280px; text-align: center; }
+    footer { flex-direction: column; gap: 16px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SVG Grain Filter -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="grain-filter" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- Grain & Vignette -->
+<div id="grain"></div>
+<div id="vignette"></div>
+
+<!-- Loading Screen -->
+<div id="loader">
+  <div class="loader-brand">V<span>Ö</span>RM</div>
+  <div class="loader-track">
+    <div class="loader-fill" id="loader-fill"></div>
+  </div>
+  <div class="loader-pct" id="loader-pct">0%</div>
+</div>
+
+<!-- Navbar -->
+<nav>
+  <a href="#" class="nav-logo">V<span style="color:var(--copper-light)">Ö</span>RM</a>
+  <ul class="nav-links">
+    <li><a href="#">Heritage</a></li>
+    <li><a href="#">Acoustics</a></li>
+    <li><a href="#">Étude No. 1</a></li>
+    <li><a href="#">Acquire</a></li>
+  </ul>
+</nav>
+
+<!-- Animation Section -->
+<div id="animation-section">
+  <div id="canvas-wrapper">
+    <canvas id="hero-canvas"></canvas>
+
+    <!-- Overlays -->
+    <div class="overlay" id="ov-headline">
+      <div class="eyebrow">Étude No. 1 — Limited Edition</div>
+      <h1>Sound<br>Rendered<br><em>Visible</em></h1>
+      <div class="sub">Brushed Titanium · Alcantara · Burnt Copper</div>
+    </div>
+
+    <div class="overlay" id="ov-tagline">
+      <p>Every component chosen<br>as carefully as every note.</p>
+      <div class="rule"></div>
+    </div>
+
+    <div class="overlay" id="ov-left">
+      <div class="spec-label">
+        <span class="num">01</span>
+        <span class="name">Earcup Shell</span>
+        <span class="desc">Brushed titanium, satin graphite</span>
+      </div>
+      <div class="spec-label">
+        <span class="num">02</span>
+        <span class="name">Acoustic Mesh</span>
+        <span class="desc">Precision-woven grille with copper ring accent</span>
+      </div>
+      <div class="spec-label">
+        <span class="num">03</span>
+        <span class="name">Dynamic Driver</span>
+        <span class="desc">Exposed copper voice coil, 50mm</span>
+      </div>
+    </div>
+
+    <div class="overlay" id="ov-right">
+      <div class="spec-label">
+        <span class="num">04</span>
+        <span class="name">Acoustic Chamber</span>
+        <span class="desc">Internal precision housing</span>
+      </div>
+      <div class="spec-label">
+        <span class="num">05</span>
+        <span class="name">Ear Cushion</span>
+        <span class="desc">Memory-foam Alcantara, 28mm deep</span>
+      </div>
+      <div class="spec-label">
+        <span class="num">06</span>
+        <span class="name">Yoke &amp; Band</span>
+        <span class="desc">Magnesium yoke arms, padded headband frame</span>
+      </div>
+    </div>
+
+    <div class="overlay" id="ov-cta">
+      <div class="cta-label">Available in 47 pieces</div>
+      <a href="#">Reserve Yours</a>
+    </div>
+
+    <div id="scroll-hint">
+      <span>Scroll to Explore</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Content Sections -->
+<div id="content">
+
+  <div class="section-divider"></div>
+
+  <div class="section" id="section-heritage">
+    <div class="heritage-left">
+      <div class="eyebrow">The VÖRM Philosophy</div>
+      <h2>Form<br>follows<br><em>frequency</em></h2>
+    </div>
+    <div class="heritage-right">
+      <p>VÖRM was founded on a single axiom: that an object capable of delivering transcendent sound must itself be transcendent in form. Not decoration placed upon function — but form and function fused at the molecular level, indistinguishable from one another.</p>
+      <p>The Étude No. 1 begins with a 50mm dynamic driver wound with 0.025mm copper wire, hand-tensioned to within microns of tolerance. Its titanium housing is milled from a single billet, then finished over eleven hours by a single craftsperson in our Copenhagen atelier.</p>
+      <p>We produce forty-seven pieces per year. Not because we can't produce more, but because each one deserves the time it requires to be what it is.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="section" id="section-specs">
+    <div class="specs-eyebrow">Technical Specifications</div>
+    <h2 class="specs-title">Precision, Itemised</h2>
+    <div class="specs-grid">
+      <div class="spec-item">
+        <div class="s-label">Driver</div>
+        <div class="s-value">50mm</div>
+        <div class="s-desc">Dynamic driver with hand-wound copper voice coil, visible through precision-cut circular aperture</div>
+      </div>
+      <div class="spec-item">
+        <div class="s-label">Housing</div>
+        <div class="s-value">Grade 5 Ti</div>
+        <div class="s-desc">Single-billet brushed titanium with satin graphite finish, zero-tolerance CNC tolerances</div>
+      </div>
+      <div class="spec-item">
+        <div class="s-label">Earcups</div>
+        <div class="s-value">Ø 98mm</div>
+        <div class="s-desc">Large circular profile with slim arched headband and low-profile pivoting yokes</div>
+      </div>
+      <div class="spec-item">
+        <div class="s-label">Cushion</div>
+        <div class="s-value">Alcantara</div>
+        <div class="s-desc">28mm depth memory-foam pad, hand-stitched Alcantara shell, protein-free</div>
+      </div>
+      <div class="spec-item">
+        <div class="s-label">Frequency</div>
+        <div class="s-value">8–42kHz</div>
+        <div class="s-desc">Extended high-frequency response, ±1.5dB at reference SPL of 94dB</div>
+      </div>
+      <div class="spec-item">
+        <div class="s-label">Impedance</div>
+        <div class="s-value">34 Ω</div>
+        <div class="s-desc">Optimised for both portable sources and dedicated amplifiers</div>
+      </div>
+      <div class="spec-item">
+        <div class="s-label">Headband</div>
+        <div class="s-value">Magnesium</div>
+        <div class="s-desc">Forged magnesium yoke arms with padded headband frame, tool-free length adjustment</div>
+      </div>
+      <div class="spec-item">
+        <div class="s-label">Accent</div>
+        <div class="s-value">Burnt Copper</div>
+        <div class="s-desc">Hand-oxidised copper ring accent on acoustic mesh grille, unique patina per unit</div>
+      </div>
+      <div class="spec-item">
+        <div class="s-label">Weight</div>
+        <div class="s-value">295g</div>
+        <div class="s-desc">Including detachable 4-pin XLR balanced cable, hand-braided 1.8m OFC copper</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="section" id="section-quote">
+    <blockquote>
+      The ear does not merely receive sound.<br>
+      It deserves to be held by something<br>worthy of the music it carries.
+    </blockquote>
+    <cite>— Mikael Vörn, Founder &amp; Chief Acoustic Engineer</cite>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="section" id="section-cta">
+    <h2>Begin<br>the <em>Étude</em></h2>
+    <p>Forty-seven pieces. Yours may still be waiting.</p>
+    <div>
+      <a href="#" class="btn-primary">Reserve a Pair</a>
+      <a href="#" class="btn-secondary">Request a Listening</a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="f-logo">V<span style="color:var(--copper)">Ö</span>RM</div>
+    <div class="f-copy">© MMXXVI VÖRM Acoustic Atelier · Copenhagen</div>
+  </footer>
+</div>
+
+<script>
+(function() {
+  // ─── CONFIGURATION ───────────────────────────────────────────────
+  // Frame source: tries the uploaded video, falls back to demo mode
+  // In production: replace with your actual frame images folder path
+  // Pattern: frame-001.png through frame-NNN.png
+  // For this demo we simulate frames from the two product images
+
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  const loader = document.getElementById('loader');
+  const loaderFill = document.getElementById('loader-fill');
+  const loaderPct = document.getElementById('loader-pct');
+  const animSection = document.getElementById('animation-section');
+  const scrollHint = document.getElementById('scroll-hint');
+
+  const BG = '#0a0a0a';
+  let frames = [];
+  let currentFrameIndex = -1;
+  let rafScheduled = false;
+  let needsRedraw = false;
+
+  // ─── CANVAS SETUP ─────────────────────────────────────────────────
+  const dpr = window.devicePixelRatio || 1;
+
+  function resizeCanvas() {
+    canvas.width  = window.innerWidth  * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width  = window.innerWidth  + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.scale(dpr, dpr);
+    if (frames.length) drawFrame(currentFrameIndex >= 0 ? currentFrameIndex : frames.length - 1);
+  }
+
+  // ─── DRAW FRAME ───────────────────────────────────────────────────
+  function drawFrame(idx) {
+    const img = frames[idx];
+    if (!img) return;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    ctx.clearRect(0, 0, vw, vh);
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, vw, vh);
+
+    const ir = img.naturalWidth / img.naturalHeight;
+    const cr = vw / vh;
+    let dw, dh, dx, dy;
+    if (ir > cr) {
+      dh = vh; dw = dh * ir;
+    } else {
+      dw = vw; dh = dw / ir;
+    }
+    dx = (vw - dw) / 2;
+    dy = (vh - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
+  // ─── SCROLL → FRAME MAPPING ───────────────────────────────────────
+  function getScrollProgress() {
+    const rect = animSection.getBoundingClientRect();
+    const total = animSection.offsetHeight - window.innerHeight;
+    const scrolled = -rect.top;
+    return Math.min(1, Math.max(0, scrolled / total));
+  }
+
+  function getFrameIndex(progress) {
+    // Reverse: scroll forward = go from last frame to first
+    const n = frames.length;
+    const idx = Math.round((1 - progress) * (n - 1));
+    return Math.min(n - 1, Math.max(0, idx));
+  }
+
+  // ─── OVERLAY OPACITY ──────────────────────────────────────────────
+  function smoothstep(edge0, edge1, x) {
+    const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  }
+
+  function overlayAlpha(p, fadeIn0, fadeIn1, fadeOut0, fadeOut1) {
+    const inVal  = smoothstep(fadeIn0,  fadeIn1,  p);
+    const outVal = smoothstep(fadeOut0, fadeOut1, p);
+    return Math.min(inVal, 1 - outVal);
+  }
+
+  const ovHeadline = document.getElementById('ov-headline');
+  const ovTagline  = document.getElementById('ov-tagline');
+  const ovLeft     = document.getElementById('ov-left');
+  const ovRight    = document.getElementById('ov-right');
+  const ovCta      = document.getElementById('ov-cta');
+
+  function updateOverlays(p) {
+    // Headline: 0-20%
+    const h = overlayAlpha(p, 0, 0.02, 0.18, 0.22);
+    ovHeadline.style.opacity = h;
+
+    // Tagline: 25-45%
+    const t = overlayAlpha(p, 0.25, 0.30, 0.42, 0.47);
+    ovTagline.style.opacity = t;
+
+    // Sides: 68-90%
+    const s = overlayAlpha(p, 0.68, 0.74, 0.88, 0.93);
+    ovLeft.style.opacity  = s;
+    ovRight.style.opacity = s;
+
+    // CTA: 90-100%
+    const c = overlayAlpha(p, 0.90, 0.95, 1.0, 1.0);
+    ovCta.style.opacity = c;
+
+    // Scroll hint
+    const sh = overlayAlpha(p, 0, 0, 0.02, 0.05);
+    scrollHint.style.opacity = 1 - sh;
+  }
+
+  // ─── RAF LOOP ─────────────────────────────────────────────────────
+  function rafLoop() {
+    if (needsRedraw) {
+      needsRedraw = false;
+      const p = getScrollProgress();
+      const idx = getFrameIndex(p);
+      if (idx !== currentFrameIndex) {
+        currentFrameIndex = idx;
+        drawFrame(idx);
+      }
+      updateOverlays(p);
+    }
+    rafScheduled = false;
+  }
+
+  window.addEventListener('scroll', function() {
+    if (!rafScheduled) {
+      needsRedraw = true;
+      rafScheduled = true;
+      requestAnimationFrame(rafLoop);
+    }
+  }, { passive: true });
+
+  window.addEventListener('resize', function() {
+    // Reset DPR scaling on resize
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    resizeCanvas();
+    needsRedraw = true;
+    rafScheduled = true;
+    requestAnimationFrame(rafLoop);
+  });
+
+  // ─── INTERSECTION OBSERVER (content sections) ─────────────────────
+  const sections = document.querySelectorAll('.section');
+  const io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  sections.forEach(function(s) { io.observe(s); });
+
+  // ─── FRAME LOADING ────────────────────────────────────────────────
+  // Attempts to load frames from /frames/frame-001.png pattern
+  // Falls back to 2-frame demo using the uploaded product images
+  function loadFrames(urls) {
+    return new Promise(function(resolve) {
+      const images = new Array(urls.length);
+      let loaded = 0;
+
+      function tick() {
+        const pct = Math.round((loaded / urls.length) * 100);
+        loaderFill.style.width = pct + '%';
+        loaderPct.textContent  = pct + '%';
+        if (loaded === urls.length) resolve(images);
+      }
+
+      urls.forEach(function(url, i) {
+        const img = new Image();
+        img.onload = img.onerror = function() {
+          images[i] = (img.complete && img.naturalWidth) ? img : null;
+          loaded++;
+          tick();
+        };
+        img.src = url;
+      });
+    });
+  }
+
+  // Build frame URL list
+  // Priority 1: detect frame folder (user would deploy alongside HTML)
+  // Priority 2: demo with the two product images repeated/interpolated
+  async function buildFrameList() {
+    // Try to detect frame-001.png pattern from /frames/ folder
+    const probe = new Image();
+    const probePromise = new Promise(function(res) {
+      probe.onload  = function() { res(true);  };
+      probe.onerror = function() { res(false); };
+      probe.src = 'frames/frame-001.png';
+    });
+
+    const hasFrames = await probePromise;
+
+    if (hasFrames) {
+      // Probe for max frames
+      let max = 1;
+      const step = 10;
+      // Quick scan in steps of 10
+      for (let n = 10; n <= 999; n += step) {
+        const p2 = new Image();
+        const found = await new Promise(function(r) {
+          p2.onload = function() { r(true); };
+          p2.onerror = function() { r(false); };
+          p2.src = 'frames/frame-' + String(n).padStart(3,'0') + '.png';
+        });
+        if (!found) { max = n - step; break; }
+        max = n;
+      }
+      // Fine scan around max
+      for (let n = max + 1; n <= max + step; n++) {
+        const p3 = new Image();
+        const found = await new Promise(function(r) {
+          p3.onload = function() { r(true); };
+          p3.onerror = function() { r(false); };
+          p3.src = 'frames/frame-' + String(n).padStart(3,'0') + '.png';
+        });
+        if (!found) break;
+        max = n;
+      }
+      const urls = [];
+      for (let i = 1; i <= max; i++) {
+        urls.push('frames/frame-' + String(i).padStart(3,'0') + '.png');
+      }
+      return urls;
+    } else {
+      // Demo mode: use the two uploaded images as keyframes (interpolated to 60 virtual frames)
+      // assembled = image 1, exploded = image 2
+      const img1 = 'Gemini_Generated_Image_zeg7uqzeg7uqzeg7.png';
+      const img2 = 'Gemini_Generated_Image_10km4s10km4s10km.png';
+      const VIRTUAL = 60;
+      const urls = [];
+      for (let i = 0; i < VIRTUAL; i++) {
+        // First half: assembled, second half: exploded
+        urls.push(i < VIRTUAL / 2 ? img1 : img2);
+      }
+      return urls;
+    }
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────────
+  async function init() {
+    resizeCanvas();
+
+    // Draw placeholder BG
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+    const urls = await buildFrameList();
+    const images = await loadFrames(urls);
+
+    // Filter out nulls (failed loads)
+    frames = images.filter(Boolean);
+    if (!frames.length) {
+      // last resort: just show a black canvas
+      frames = [];
+    }
+
+    // Initial draw: last frame (assembled product)
+    currentFrameIndex = frames.length - 1;
+    if (frames.length) drawFrame(currentFrameIndex);
+    updateOverlays(0);
+
+    // Hide loader
+    setTimeout(function() {
+      loader.classList.add('hidden');
+      setTimeout(function() { loader.style.display = 'none'; }, 1000);
+    }, 300);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
